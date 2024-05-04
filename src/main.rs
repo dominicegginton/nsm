@@ -15,14 +15,14 @@ struct Args {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 enum Command {
-    OS(OSCommand),
+    Host(HostCommand),
     Home(HomeCommand),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// OS
-#[argh(subcommand, name = "os")]
-struct OSCommand {
+/// Host
+#[argh(subcommand, name = "host")]
+struct HostCommand {
     #[argh(subcommand)]
     subcommand: HostSubCommand,
 }
@@ -84,7 +84,7 @@ fn main() {
     if env::var("NSM_FLAKE").is_ok() {
         let args: Args = argh::from_env();
         let command: &dyn Runnable = match args.command {
-            Command::OS(OSCommand { subcommand }) => match subcommand {
+            Command::Host(HostCommand { subcommand }) => match subcommand {
                 HostSubCommand::Switch(HostSwitchCommand {}) => &HostSwitchCommand {},
             },
             Command::Home(HomeCommand { subcommand }) => match subcommand {
