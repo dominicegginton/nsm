@@ -11,7 +11,7 @@
       pkgs = import nixpkgs {inherit system;};
     in {
       formatter = pkgs.alejandra;
-      defaultPackage = import ./default.nix {inherit pkgs;};
-      devShell = import ./shell.nix {inherit pkgs;};
+      packages.default = import ./default.nix {inherit pkgs;};
+      devShells.default = import ./shell.nix {inherit pkgs;};
     });
 }
