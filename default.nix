@@ -8,7 +8,7 @@ with rustPlatform;
     pname = "nsm";
     version = "0.1.0";
     src = ./.;
-    cargoSha256 = "sha256-g73aagINMNM2ARN7BBejulOWwfGjkKvkUlcflulzPo0=";
+    cargoSha256 = "sha256-9mbA7yTzCPEbDUobS2cdSI9sZApBaPSJQqWgFlzgXHU=";
     nativeBuildInputs = with pkgs; [
       rustc
       cargo

@@ -1,4 +1,9 @@
+use std::env;
 use {argh::FromArgs, std::fmt::Debug};
+
+trait Runnable {
+    fn run(&self);
+}
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Nix Systems Management
@@ -19,31 +24,31 @@ enum Command {
 #[argh(subcommand, name = "os")]
 struct OSCommand {
     #[argh(subcommand)]
-    subcommand: OSSubCommand,
+    subcommand: HostSubCommand,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
-enum OSSubCommand {
-    Switch(OsSwitchCommand),
-    Boot(BootCommand),
-    Test(TestCommand),
+enum HostSubCommand {
+    Switch(HostSwitchCommand),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Switch
 #[argh(subcommand, name = "switch")]
-struct OsSwitchCommand {}
-
-#[derive(FromArgs, PartialEq, Debug)]
-/// Boot
-#[argh(subcommand, name = "boot")]
-struct BootCommand {}
-
-#[derive(FromArgs, PartialEq, Debug)]
-/// Test
-#[argh(subcommand, name = "test")]
-struct TestCommand {}
+struct HostSwitchCommand {}
+impl Runnable for HostSwitchCommand {
+    fn run(&self) {
+        let _ = std::process::Command::new("sudo")
+            .arg("nixos-rebuild")
+            .arg("switch")
+            .arg("--flake")
+            .arg(env::var("NSM_FLAKE").unwrap())
+            .spawn()
+            .expect("ls command failed to start")
+            .wait();
+    }
+}
 
 #[derive(FromArgs, PartialEq, Debug)]
 /// Home
@@ -63,26 +68,31 @@ enum HomeSubCommand {
 /// Switch
 #[argh(subcommand, name = "switch")]
 struct HomeSwitchCommand {}
+impl Runnable for HomeSwitchCommand {
+    fn run(&self) {
+        let _ =    std::process::Command::new("home-manager")
+            .arg("switch")
+            .arg("--flake")
+            .arg(env::var("NSM_FLAKE").unwrap())
+            .spawn()
+            .expect("ls command failed to start")
+            .wait();
+    }
+}
 
 fn main() {
-    let args: Args = argh::from_env();
-
-    match args.command {
-        Command::OS(OSCommand { subcommand }) => match subcommand {
-            OSSubCommand::Switch(OsSwitchCommand {}) => {
-                println!("os switch");
-            }
-            OSSubCommand::Boot(BootCommand {}) => {
-                println!("os boot");
-            }
-            OSSubCommand::Test(TestCommand {}) => {
-                println!("os test");
-            }
-        },
-        Command::Home(HomeCommand { subcommand }) => match subcommand {
-            HomeSubCommand::Switch(HomeSwitchCommand {}) => {
-                println!("home switch");
-            }
-        },
+    if env::var("NSM_FLAKE").is_ok() {
+        let args: Args = argh::from_env();
+        let command: &dyn Runnable = match args.command {
+            Command::OS(OSCommand { subcommand }) => match subcommand {
+                HostSubCommand::Switch(HostSwitchCommand {}) => &HostSwitchCommand {},
+            },
+            Command::Home(HomeCommand { subcommand }) => match subcommand {
+                HomeSubCommand::Switch(HomeSwitchCommand {}) => &HomeSwitchCommand {},
+            },
+        };
+        command.run();
+    } else {
+        println!("NSM_FLAKE is not set");
     }
 }
