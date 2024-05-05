@@ -31,6 +31,7 @@ struct HostCommand {
 #[argh(subcommand)]
 enum HostSubCommand {
     Switch(HostSwitchCommand),
+    CollectGarbage(HostCollectGarbageCommand),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -45,8 +46,44 @@ impl Runnable for HostSwitchCommand {
             .arg("--flake")
             .arg(env::var("NSM_FLAKE").unwrap())
             .spawn()
-            .expect("ls command failed to start")
+            .expect("failed")
             .wait();
+    }
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+/// Collect garbage on the host
+#[argh(subcommand, name = "collect-garbage")]
+struct HostCollectGarbageCommand {
+    #[argh(switch)]
+    /// delete old generations (+2days old or more than 5 generations)
+    generations: bool,
+}
+impl Runnable for HostCollectGarbageCommand {
+    fn run(&self) {
+        let _ = std::process::Command::new("sudo")
+            .arg("nix-collect-garbage")
+            .arg("-d")
+            .spawn()
+            .expect("failed")
+            .wait();
+        let _ = std::process::Command::new("sudo")
+            .arg("nix")
+            .arg("store")
+            .arg("optimise")
+            .spawn()
+            .expect("failed")
+            .wait();
+        if self.generations {
+            let _ = std::process::Command::new("sudo")
+                .arg("nix-env")
+                .arg("-p")
+                .arg("/nix/var/nix/profiles/system")
+                .arg("--delete-generations")
+                .spawn()
+                .expect("failed")
+                .wait();
+        }
     }
 }
 
@@ -70,12 +107,12 @@ enum HomeSubCommand {
 struct HomeSwitchCommand {}
 impl Runnable for HomeSwitchCommand {
     fn run(&self) {
-        let _ =    std::process::Command::new("home-manager")
+        let _ = std::process::Command::new("home-manager")
             .arg("switch")
             .arg("--flake")
             .arg(env::var("NSM_FLAKE").unwrap())
             .spawn()
-            .expect("ls command failed to start")
+            .expect("failed")
             .wait();
     }
 }
@@ -83,15 +120,17 @@ impl Runnable for HomeSwitchCommand {
 fn main() {
     if env::var("NSM_FLAKE").is_ok() {
         let args: Args = argh::from_env();
-        let command: &dyn Runnable = match args.command {
+        match args.command {
             Command::Host(HostCommand { subcommand }) => match subcommand {
-                HostSubCommand::Switch(HostSwitchCommand {}) => &HostSwitchCommand {},
+                HostSubCommand::Switch(HostSwitchCommand {}) => HostSwitchCommand {}.run(),
+                HostSubCommand::CollectGarbage(HostCollectGarbageCommand { generations }) => {
+                    HostCollectGarbageCommand { generations }.run()
+                }
             },
             Command::Home(HomeCommand { subcommand }) => match subcommand {
-                HomeSubCommand::Switch(HomeSwitchCommand {}) => &HomeSwitchCommand {},
+                HomeSubCommand::Switch(HomeSwitchCommand {}) => HomeSwitchCommand {}.run(),
             },
-        };
-        command.run();
+        }
     } else {
         println!("NSM_FLAKE is not set");
     }
