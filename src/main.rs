@@ -20,7 +20,7 @@ enum Command {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Host
+/// Host configuration
 #[argh(subcommand, name = "host")]
 struct HostCommand {
     #[argh(subcommand)]
@@ -34,7 +34,7 @@ enum HostSubCommand {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Switch
+/// Switch to the host configuration
 #[argh(subcommand, name = "switch")]
 struct HostSwitchCommand {}
 impl Runnable for HostSwitchCommand {
@@ -51,7 +51,7 @@ impl Runnable for HostSwitchCommand {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Home
+/// Home-manager configuration
 #[argh(subcommand, name = "home")]
 struct HomeCommand {
     #[argh(subcommand)]
@@ -65,7 +65,7 @@ enum HomeSubCommand {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Switch
+/// Switch to the home-manager configuration
 #[argh(subcommand, name = "switch")]
 struct HomeSwitchCommand {}
 impl Runnable for HomeSwitchCommand {
